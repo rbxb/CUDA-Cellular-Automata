@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <sstream>
+#include <iomanip>
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -20,9 +22,17 @@ void save_image(std::string path, char* buf, int width, int height, int depth) {
     ofs << "HEIGHT " << height << std::endl;
     ofs << "DEPTH " << depth << std::endl;
     ofs << "MAXVAL 255" << std::endl;
+    ofs << "TUPLTYPE GRAYSCALE" << std::endl;
     ofs << "ENDHDR" << std::endl;
     ofs.write(buf, width * height * depth);
     ofs.close();
+}
+
+// Pad image index with zeroes
+std::string pad_image_index(int i, int n = 4) {
+    std::stringstream ss;
+    ss << std::setfill('0') << std::setw(n) << i;
+    return ss.str();
 }
 
 // Kernel to sum all pixels in the array of indices

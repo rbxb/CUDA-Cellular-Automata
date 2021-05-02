@@ -37,7 +37,7 @@ int main(void) {
         }
 
         // Save as PPM
-        save_image("out-" + std::to_string(i) + ".pam", out_buffer, WIDTH, HEIGHT, 1);
+        save_image("out" + pad_image_index(i) + ".pam", out_buffer, WIDTH, HEIGHT, 1);
 
         // Swap buffers
         char* temp = buf_r;
@@ -49,7 +49,7 @@ int main(void) {
     // Save the final frame
     cudaMemcpy(out_buffer, buf_r, SIZE, cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
-    save_image("out-" + std::to_string(FRAMES) + ".pam", out_buffer, WIDTH, HEIGHT, 1);
+    save_image("out" + pad_image_index(FRAMES) + ".pam", out_buffer, WIDTH, HEIGHT, 1);
 
     // Free buffers
     cudaFree(buf_r);
