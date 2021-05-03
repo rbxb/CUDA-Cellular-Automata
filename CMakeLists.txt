@@ -5,13 +5,17 @@ project(ReefCA LANGUAGES CXX CUDA)
 
 add_executable(benchmark "ReefCA/benchmark/benchmark.cu")
 add_executable(conway "ReefCA/conway/conway_run.cu")
+add_executable(mnca_test "ReefCA/mnca/mnca_test.cu")
+add_executable(mnca_run "ReefCA/mnca/mnca_run.cu")
 
 target_compile_features(benchmark PUBLIC cxx_std_11)
 target_compile_features(conway PUBLIC cxx_std_11)
+target_compile_features(mnca_test PUBLIC cxx_std_11)
+target_compile_features(mnca_run PUBLIC cxx_std_11)
 
-set_target_properties(benchmark conway PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(benchmark conway PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_target_properties(benchmark conway PROPERTIES CUDA_ARCHITECTURES "35;50;72")
+set_target_properties(benchmark conway mnca_test mnca_run PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(benchmark conway mnca_test mnca_run PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(benchmark conway mnca_test mnca_run PROPERTIES CUDA_ARCHITECTURES "35;50;72")
 
 include_directories("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3/include")
 include_directories("ReefCA")

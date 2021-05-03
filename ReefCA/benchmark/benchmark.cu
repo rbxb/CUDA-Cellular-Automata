@@ -9,17 +9,17 @@
 #include "helpers.cu"
 #include "conway.cu"
 
-long long render(char* buf_r, char* buf_w, int frames) {
+long long render(unsigned char* buf_r, unsigned char* buf_w, int frames) {
     // Run seed kernel
-    seed << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r);
+    helpers::seed << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r);
 
     // Start wall clock
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     // Run game of life kernel
     for (int i = 0; i < frames; i++) {
-        transition << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w);
-        char* temp = buf_r;
+        conway::transition << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w);
+        unsigned char* temp = buf_r;
         buf_r = buf_w;
         buf_w = temp;
     }
@@ -32,8 +32,8 @@ long long render(char* buf_r, char* buf_w, int frames) {
 }
 
 int main(void) {
-    char* buffer_a;
-    char* buffer_b;
+    unsigned char* buffer_a;
+    unsigned char* buffer_b;
 
     // Allocate buffers
     cudaMalloc(&buffer_a, SIZE);

@@ -1,10 +1,11 @@
 #include <iostream>
 #include <iomanip>
+#include <vector>
 
-#include "conway.cu"
+#include "mnca.cu"
 #include "helpers.cu"
 
-#define FRAMES 100
+#define FRAMES 1000
 
 int main(void) {
     unsigned char* buf_r;
@@ -17,8 +18,32 @@ int main(void) {
     // Create out buffer
     unsigned char* out_buffer = new unsigned char[SIZE];
 
+    // Create neighborhood 0
+    std::vector<int> nh0 = std::vector<int>();
+    mnca::generate_nh_midpoint_circle(3, nh0);
+    mnca::generate_nh_midpoint_circle(1, nh0);
+    int nh0_len = nh0.size() / 2;
+
+    // Copy neighborhood 0 to device
+    int* d_nh0;
+    cudaMalloc(&d_nh0, nh0_len * sizeof(int) * 2);
+    cudaMemcpy(d_nh0, &nh0[0], nh0_len * sizeof(int) * 2, cudaMemcpyHostToDevice);
+
+    // Create neighborhood 1
+    std::vector<int> nh1 = std::vector<int>();
+    mnca::generate_nh_midpoint_circle(14, nh1);
+    mnca::generate_nh_midpoint_circle(11, nh1);
+    mnca::generate_nh_midpoint_circle(8, nh1);
+    mnca::generate_nh_midpoint_circle(5, nh1);
+    int nh1_len = nh1.size() / 2;
+
+    // Copy neighborhood 1 to device
+    int* d_nh1;
+    cudaMalloc(&d_nh1, nh1_len * sizeof(int) * 2);
+    cudaMemcpy(d_nh1, &nh1[0], nh1_len * sizeof(int) * 2, cudaMemcpyHostToDevice);
+
     // Run seed kernel
-    helpers::seed << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r);
+    helpers::seed_symmetric << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r);
 
     // Loop conways game of life
     for (int i = 0; i < FRAMES; i++) {
@@ -29,7 +54,7 @@ int main(void) {
         cudaDeviceSynchronize();
 
         // Start next transition
-        conway::transition << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w);
+        mnca::simple_mnca << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (d_nh0, nh0_len, d_nh1, nh1_len, buf_r, buf_w);
 
         // Update cout
         if (i % 10 == 0) {
