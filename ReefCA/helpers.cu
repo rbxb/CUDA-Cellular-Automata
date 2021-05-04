@@ -46,7 +46,13 @@ namespace helpers {
     __global__
     void seed(unsigned char* buf) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
-        if (i < SIZE && random(i) > 60) buf[i] = 255;
+        if (i < SIZE) {
+            if (random(i) > 60) {
+                buf[i] = 255;
+            } else {
+                buf[i] = 0;
+            }
+        }
     }
 
     // Kernel function to symmetrically seed cellmap
@@ -65,6 +71,8 @@ namespace helpers {
             int q = y * WIDTH + x;
             if (random(q) > 70) {
                 buf[i] = 255;
+            } else {
+                buf[i] = 0;
             }
         }
     }

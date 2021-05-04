@@ -1,8 +1,8 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define WIDTH 960
-#define HEIGHT 540
+#define WIDTH 256
+#define HEIGHT 256
 
 #define RAND_SEED 8675309
 

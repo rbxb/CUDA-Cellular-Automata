@@ -9,6 +9,10 @@
 #include "helpers.cu"
 #include "contants.h"
 
+#define NUM_PARAMS_NH0 4
+#define NUM_PARAMS_NH1 4
+const int NUM_PARAMS = NUM_PARAMS_NH0 + NUM_PARAMS_NH1;
+
 namespace mnca {
 
     // Generates a list of x and y values for a disk with inner and outer radius
@@ -117,6 +121,7 @@ namespace mnca {
     }
 
     // A simple MNCA transition
+    __constant__ unsigned int d_params[NUM_PARAMS];
     __global__
     void simple_mnca(int* nh0, int nh0_len, int* nh1, int nh1_len, unsigned char* buf_r, unsigned char* buf_w) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -127,23 +132,28 @@ namespace mnca {
             // Sum nh0
             unsigned long int sum_nh0 = sum_nh(x, y, nh0, nh0_len, buf_r) / 255;
 
-            if (sum_nh0 <= 6) {
+            if (sum_nh0 < d_params[0]) {
                 buf_w[i] = 0;
                 return;
-            } else if (sum_nh0 <= 10) {
+            } else if (d_params[1] <= sum_nh0 && sum_nh0 < d_params[2]) {
                 buf_w[i] = 255;
+                return;
+            } else if (d_params[3] <= sum_nh0) {
+                buf_w[i] = 0;
                 return;
             }
 
             // Sum nh1
             unsigned long int sum_nh1 = sum_nh(x, y, nh1, nh1_len, buf_r) / 255;
-            if (8 <= sum_nh1 && sum_nh1 <= 24) {
+            if (sum_nh1 < d_params[4]) {
                 buf_w[i] = 0;
                 return;
-            } else if (25 <= sum_nh1 && sum_nh1 <= 30) {
+            }
+            else if (d_params[5] <= sum_nh1 && sum_nh1 < d_params[6]) {
                 buf_w[i] = 255;
                 return;
-            } else if (sum_nh1 >= 31) {
+            }
+            else if (d_params[7] <= sum_nh1) {
                 buf_w[i] = 0;
                 return;
             }

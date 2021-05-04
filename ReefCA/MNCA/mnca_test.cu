@@ -3,6 +3,7 @@
 
 #include "mnca.cu"
 #include "helpers.cu"
+#include "nh_generator.cpp"
 
 #define FRAMES 100
 
@@ -26,11 +27,7 @@ int main(void) {
     unsigned char* out_buffer = new unsigned char[SIZE];
 
     // Create neighborhood
-    std::vector<int> v = std::vector<int>();
-    mnca::generate_nh_midpoint_circle(14, v);
-    mnca::generate_nh_midpoint_circle(11, v);
-    mnca::generate_nh_midpoint_circle(8, v);
-    mnca::generate_nh_midpoint_circle(5, v);
+    std::vector<int> v = generate_nh(15, 10);
     int len = v.size() / 2;
     
     // Copy neighborhood to device

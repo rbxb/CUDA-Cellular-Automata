@@ -11,6 +11,10 @@ int main(void) {
     unsigned char* buf_r;
     unsigned char* buf_w;
 
+    // MNCA parameters
+    unsigned int params[NUM_PARAMS_NH0+NUM_PARAMS_NH1] = { 7,12,19,21,10,25,53,133 };
+    cudaMemcpyToSymbol(mnca::d_params, params, (NUM_PARAMS_NH0 + NUM_PARAMS_NH1) * sizeof(unsigned int));
+
     // Allocate buffers
     cudaMalloc(&buf_r, SIZE);
     cudaMalloc(&buf_w, SIZE);
@@ -43,7 +47,7 @@ int main(void) {
     cudaMemcpy(d_nh1, &nh1[0], nh1_len * sizeof(int) * 2, cudaMemcpyHostToDevice);
 
     // Run seed kernel
-    helpers::seed_symmetric << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r);
+    helpers::seed << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r);
 
     // Loop conways game of life
     for (int i = 0; i < FRAMES; i++) {
