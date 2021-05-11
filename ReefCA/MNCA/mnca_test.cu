@@ -1,21 +1,9 @@
 #include <iostream>
 #include <iomanip>
 
-#include "mnca.cu"
-#include "helpers.cu"
-#include "nh_generator.cpp"
+#include "reefca.h"
 
-#define FRAMES 100
-
-__global__
-void draw_nh(int x, int y, int* nh, int len, unsigned char* buf_w) {
-    for (int i = 0; i < len; i++) {
-        int nhx = nh[i * 2];
-        int nhy = nh[i * 2 + 1];
-        int index = helpers::get_rel(x,y,nhx,nhy);
-        buf_w[index] = 255;
-    }
-}
+#define FRAMES SIZE
 
 int main(void) {
     unsigned char* buf_w;
@@ -27,28 +15,33 @@ int main(void) {
     unsigned char* out_buffer = new unsigned char[SIZE];
 
     // Create neighborhood
-    std::vector<int> v = generate_nh(15, 10);
-    int len = v.size() / 2;
+    std::vector<int> v = std::vector<int>();
+    ReefCA::generate_nh_fill_circle(7, 3, v);
+    nhood* nhoods = ReefCA::create_nhood_row(v);
+
+    for (int i = 0; i < 1000; i++) {
+        int x = i % WIDTH;
+        int y = i / WIDTH;
+
+        // Draw neighborhood
+        ReefCA::draw_nhood << < 1, 1 >> > (buf_w, y, nhoods[x]);
+
+        // Copy frame from device to host
+        cudaMemcpy(out_buffer, buf_w, SIZE, cudaMemcpyDeviceToHost);
+
+        // Wait for device to finish
+        cudaDeviceSynchronize();
+
+        // Save as PPM
+        ReefCA::save_pam("out" + ReefCA::pad_image_index(i) + ".pam", out_buffer);
+    }
     
-    // Copy neighborhood to device
-    int* d_nh;
-    cudaMalloc(&d_nh, len * sizeof(int) * 2);
-    cudaMemcpy(d_nh, &v[0], len * sizeof(int) * 2, cudaMemcpyHostToDevice);
-
-    // Draw neighborhood
-    draw_nh<<< 1, 1 >>>(40, 2, d_nh, len, buf_w);
-
-    // Copy frame from device to host
-    cudaMemcpy(out_buffer, buf_w, SIZE, cudaMemcpyDeviceToHost);
-
-    // Wait for device to finish
-    cudaDeviceSynchronize();
-
-    // Save as PPM
-    helpers::save_image("mnca_test.pam", out_buffer, WIDTH, HEIGHT, 1);
-
     // Free buffers
     cudaFree(buf_w);
+    for (int i = 0; i < WIDTH; i++) {
+        nhood nh = nhoods[i];
+        if (nh.offset == 0) cudaFree(nh.p);
+    }
 
     return 0;
 }

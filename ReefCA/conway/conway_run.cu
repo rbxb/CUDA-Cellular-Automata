@@ -1,8 +1,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "conway.cu"
-#include "helpers.cu"
+#include "reefca.h"
 
 #define FRAMES 100
 
@@ -18,7 +17,7 @@ int main(void) {
     unsigned char* out_buffer = new unsigned char[SIZE];
 
     // Run seed kernel
-    helpers::seed << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r);
+    ReefCA::seed << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r);
 
     // Loop conways game of life
     for (int i = 0; i < FRAMES; i++) {
@@ -29,15 +28,15 @@ int main(void) {
         cudaDeviceSynchronize();
 
         // Start next transition
-        conway::transition << < (SIZE + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w);
+        ReefCA::conway_transition << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w);
 
         // Update cout
         if (i % 10 == 0) {
             std::cout << i * 100 / FRAMES << "% \t" << i << " of " << FRAMES << std::endl;
         }
 
-        // Save as PPM
-        helpers::save_image("out" + helpers::pad_image_index(i) + ".pam", out_buffer, WIDTH, HEIGHT, 1);
+        // Save as PAM
+        ReefCA::save_pam("out" + ReefCA::pad_image_index(i) + ".pam", out_buffer);
 
         // Swap buffers
         unsigned char* temp = buf_r;
@@ -49,7 +48,7 @@ int main(void) {
     // Save the final frame
     cudaMemcpy(out_buffer, buf_r, SIZE, cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
-    helpers::save_image("out" + helpers::pad_image_index(FRAMES) + ".pam", out_buffer, WIDTH, HEIGHT, 1);
+    ReefCA::save_pam("out" + ReefCA::pad_image_index(FRAMES) + ".pam", out_buffer);
 
     // Free buffers
     cudaFree(buf_r);
