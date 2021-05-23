@@ -1,8 +1,8 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define WIDTH 1024
-#define HEIGHT 1024
+#define WIDTH 256
+#define HEIGHT 256
 #define DEPTH 1
 
 #define THREADS 256

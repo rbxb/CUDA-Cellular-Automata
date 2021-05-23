@@ -16,13 +16,13 @@ template<typename T>
 void ReefCA::save_pam(std::string name, T* buf, T max, int width, int height, int depth) {
     std::ofstream ofs;
     ofs.open(name, std::ios::binary);
-    ofs << "P7" << std::endl;
-    ofs << "WIDTH " << width << std::endl;
-    ofs << "HEIGHT " << height << std::endl;
-    ofs << "DEPTH " << depth << std::endl;
-    ofs << "MAXVAL " << int(max) << std::endl;
-    ofs << "TUPLTYPE GRAYSCALE" << std::endl;
-    ofs << "ENDHDR" << std::endl;
+    ofs << "P7" << std::endl
+        << "WIDTH " << width << std::endl
+        << "HEIGHT " << height << std::endl
+        << "DEPTH " << depth << std::endl
+        << "MAXVAL " << int(max) << std::endl
+        << "TUPLTYPE GRAYSCALE" << std::endl
+        << "ENDHDR" << std::endl;
     ofs.write((char*)buf, width * height * depth * sizeof(T));
     ofs.close();
 }

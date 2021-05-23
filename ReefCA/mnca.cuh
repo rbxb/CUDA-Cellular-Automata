@@ -14,7 +14,7 @@
 #include <vector>
 
 namespace ReefCA {
-	struct nhood {
+	typedef struct nhood {
 		int* p;
 		int size;
 	};
@@ -33,6 +33,6 @@ namespace ReefCA {
 	void generate_nh_fill_circle(int r_outer, int r_inner, std::vector<int>& v);
 };
 
-#include "mnca_new.cu"
+#include "mnca.cu"
 
 #endif // MNCA_CUH

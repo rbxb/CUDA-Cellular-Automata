@@ -80,6 +80,8 @@ int main(void) {
     // Free buffers
     cudaFree(buf_r);
     cudaFree(buf_w);
+    cudaFree(nh0.p);
+    cudaFree(nh1.p);
 
     std::cout << "Done!" << std::endl;
 
