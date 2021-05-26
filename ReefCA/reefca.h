@@ -7,7 +7,6 @@
 #ifndef REEFCA_H
 #define REEFCA_H
 
-#include "contants.h"
 #include "helpers.h"
 #include "cudahelpers.cuh"
 #include "noise.cuh"

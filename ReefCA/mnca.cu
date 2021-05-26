@@ -12,13 +12,13 @@
 
 using namespace ReefCA;
 
-template<typename T>
+template<int width, int height, int depth, typename T>
 __device__ unsigned long int ReefCA::sum_nhood(T* buf, int x, int y, nhood nh, T threshold) {
     unsigned long int sum = 0;
     for (int i = 0; i < nh.size; i++) {
         int nx = nh.p[i * 2];
         int ny = nh.p[i * 2 + 1];
-        int pix = get_rel_fast(x, y, nx, ny);
+        int pix = get_rel<width, height, depth>(x, y, nx, ny);
         T value = buf[pix];
         if (value > threshold) {
             sum += value;
@@ -27,15 +27,15 @@ __device__ unsigned long int ReefCA::sum_nhood(T* buf, int x, int y, nhood nh, T
     return sum;
 }
 
-template<typename T>
+template<int width, int height, int depth, typename T>
 __global__ void ReefCA::mnca_2n_8t(T* buf_r, T* buf_w, nhood nh0, nhood nh1, unsigned short int* params) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < WIDTHxHEIGHT) {
-        int x = i % WIDTH;
-        int y = i / HEIGHT;
+    if (i < width * height) {
+        int x = i % width;
+        int y = i / height;
         T max = T(-1);
 
-        unsigned long int sum0 = sum_nhood(buf_r, x, y, nh0) / unsigned long int(max);
+        unsigned long int sum0 = sum_nhood<width, height, depth, T>(buf_r, x, y, nh0) / unsigned long int(max);
         if (sum0 < params[0]) {
             buf_w[i] = 0;
             return;
@@ -47,7 +47,7 @@ __global__ void ReefCA::mnca_2n_8t(T* buf_r, T* buf_w, nhood nh0, nhood nh1, uns
             return;
         }
         
-        unsigned long int sum1 = sum_nhood(buf_r, x, y, nh1) / unsigned long int(max);
+        unsigned long int sum1 = sum_nhood<width, height, depth, T>(buf_r, x, y, nh1) / unsigned long int(max);
         if (sum1 < params[4]) {
             buf_w[i] = 0;
             return;
@@ -63,12 +63,12 @@ __global__ void ReefCA::mnca_2n_8t(T* buf_r, T* buf_w, nhood nh0, nhood nh1, uns
     }
 }
 
-template<typename T>
+template<int width, int height, int depth, typename T>
 __global__ void ReefCA::draw_nhood(T* buf, int x, int y, nhood nh) {
     for (int i = 0; i < nh.size; i++) {
         int nx = nh.p[i * 2];
         int ny = nh.p[i * 2 + 1];
-        int pix = get_rel_fast(x, y, nx, ny);
+        int pix = get_rel<width, height, depth>(x, y, nx, ny);
         buf[pix] = T(-1);
     }
 }

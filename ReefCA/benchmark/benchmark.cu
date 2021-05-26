@@ -4,11 +4,19 @@
 
 #include "reefca.h"
 
+#define THREADS 256
+
+#define WIDTH 256
+#define HEIGHT 256
+#define DEPTH 1
+
+const int SIZE = WIDTH * HEIGHT * DEPTH;
+
 typedef void render_func (unsigned char* buf_r, unsigned char* buf_w);
 
 long long render(render_func rf, unsigned char* buf_r, unsigned char* buf_w, int frames) {
     // Run seed kernel
-    ReefCA::seed << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r);
+    ReefCA::seed<WIDTH, HEIGHT, DEPTH> << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r);
 
     // Start wall clock
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -43,40 +51,7 @@ void benchmark(render_func rf, std::string name, unsigned char* buffer_a, unsign
 }
 
 void rf_conway_transition(unsigned char* buf_r, unsigned char* buf_w) {
-    ReefCA::conway_transition << < (WIDTHxHEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w);
-}
-
-void rf_conway_transition_fast(unsigned char* buf_r, unsigned char* buf_w) {
-    ReefCA::conway_transition_fast << < (WIDTHxHEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w);
-}
-
-unsigned short int* d_params;
-ReefCA::nhood nh0, nh1;
-
-void setup_mnca() {
-    // Create MNCA parameters
-    unsigned short int params[8] = { 7,12,19,21,10,25,53,133 };
-
-    cudaMalloc(&d_params, sizeof(params));
-    cudaMemcpy(d_params, &params, sizeof(params), cudaMemcpyHostToDevice);
-
-    // Create neighborhood 0
-    std::vector<int> v = std::vector<int>();
-    ReefCA::generate_nh_fill_circle(3, 2, v);
-    ReefCA::generate_nh_fill_circle(1, 0, v);
-    nh0 = ReefCA::upload_nh(v);
-
-    // Create neighborhood 1
-    v.clear();
-    ReefCA::generate_nh_fill_circle(14, 13, v);
-    ReefCA::generate_nh_fill_circle(11, 10, v);
-    ReefCA::generate_nh_fill_circle(8, 7, v);
-    ReefCA::generate_nh_fill_circle(5, 4, v);
-    nh1 = ReefCA::upload_nh(v);
-}
-
-void rf_mnca(unsigned char* buf_r, unsigned char* buf_w) {
-    ReefCA::mnca_2n_8t << < (WIDTHxHEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w, nh0, nh1, d_params);
+    ReefCA::conway_transition<WIDTH, HEIGHT, DEPTH> << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w);
 }
 
 int main(void) {
@@ -87,11 +62,7 @@ int main(void) {
     cudaMalloc(&buffer_a, SIZE);
     cudaMalloc(&buffer_b, SIZE);
 
-    benchmark(rf_conway_transition, "conway", buffer_a, buffer_b);
-    benchmark(rf_conway_transition_fast, "conway_fast", buffer_a, buffer_b);
-
-    setup_mnca();
-    benchmark(rf_mnca, "mnca", buffer_a, buffer_b);
+    benchmark(rf_conway_transition, "benchmark", buffer_a, buffer_b);
 
     // Free buffers
     cudaFree(buffer_a);

@@ -13,7 +13,7 @@
 using namespace ReefCA;
 
 template<typename T>
-void ReefCA::save_pam(std::string name, T* buf, T max, int width, int height, int depth) {
+void ReefCA::save_pam(std::string name, T* buf, int width, int height, int depth, T max) {
     std::ofstream ofs;
     ofs.open(name, std::ios::binary);
     ofs << "P7" << std::endl

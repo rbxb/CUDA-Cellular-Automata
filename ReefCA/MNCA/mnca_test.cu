@@ -3,7 +3,11 @@
 
 #include "reefca.h"
 
-#define FRAMES SIZE
+#define WIDTH 256
+#define HEIGHT 256
+#define DEPTH 1
+
+const int SIZE = WIDTH * HEIGHT * DEPTH;
 
 int main(void) {
     unsigned char* buf_w;
@@ -20,7 +24,7 @@ int main(void) {
     nhood nh = ReefCA::upload_nh(v);
 
     // Draw neighborhood
-    ReefCA::draw_nhood << < 1, 1 >> > (buf_w, 0, 0, nh);
+    ReefCA::draw_nhood<WIDTH, HEIGHT, DEPTH> << < 1, 1 >> > (buf_w, 0, 0, nh);
 
     // Copy frame from device to host
     cudaMemcpy(out_buffer, buf_w, SIZE, cudaMemcpyDeviceToHost);
@@ -29,7 +33,7 @@ int main(void) {
     cudaDeviceSynchronize();
 
     // Save as PPM
-    ReefCA::save_pam("mnca_test.pam", out_buffer);
+    ReefCA::save_pam("mnca_test.pam", out_buffer, WIDTH, HEIGHT, DEPTH);
     
     // Free buffers
     cudaFree(buf_w);
