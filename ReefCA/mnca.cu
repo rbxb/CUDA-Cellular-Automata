@@ -13,11 +13,12 @@
 using namespace ReefCA;
 
 template<int width, int height, int depth, typename T>
-__device__ unsigned long int ReefCA::sum_nhood(T* buf, int x, int y, nhood nh, T threshold) {
+__device__ unsigned long int ReefCA::sum_nhood(T* buf, int x, int y, nhood* nh, T threshold) {
     unsigned long int sum = 0;
-    for (int i = 0; i < nh.size; i++) {
-        int nx = nh.p[i * 2];
-        int ny = nh.p[i * 2 + 1];
+    int* p = nh->p;
+    for (int i = 0; i < nh->size; i++) {
+        int nx = p[i * 2];
+        int ny = p[i * 2 + 1];
         int pix = get_rel<width, height, depth>(x, y, nx, ny);
         T value = buf[pix];
         if (value > threshold) {
@@ -27,39 +28,29 @@ __device__ unsigned long int ReefCA::sum_nhood(T* buf, int x, int y, nhood nh, T
     return sum;
 }
 
-template<int width, int height, int depth, typename T>
-__global__ void ReefCA::mnca_2n_8t(T* buf_r, T* buf_w, nhood nh0, nhood nh1, unsigned short int* params) {
+template<int width, int height, int depth, typename T, int max_nhs>
+__global__ void ReefCA::mnca_transition(T* buf_r, T* buf_w, nhood* nhs, rule<T>* rules, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < width * height) {
         int x = i % width;
         int y = i / height;
-        T max = T(-1);
 
-        unsigned long int sum0 = sum_nhood<width, height, depth, T>(buf_r, x, y, nh0) / unsigned long int(max);
-        if (sum0 < params[0]) {
-            buf_w[i] = 0;
-            return;
-        } else if (params[1] <= sum0 && sum0 < params[2]) {
-            buf_w[i] = max;
-            return;
-        } else if (params[3] <= sum0) {
-            buf_w[i] = 0;
-            return;
-        }
-        
-        unsigned long int sum1 = sum_nhood<width, height, depth, T>(buf_r, x, y, nh1) / unsigned long int(max);
-        if (sum1 < params[4]) {
-            buf_w[i] = 0;
-            return;
-        } else if (params[5] <= sum1 && sum1 < params[6]) {
-            buf_w[i] = max;
-            return;
-        } else if (params[7] <= sum1) {
-            buf_w[i] = 0;
-            return;
+        unsigned long int sums [max_nhs];
+        unsigned char summed = 0;
+
+        for (int k = 0; k < n; k++) {
+            rule<T> r = rules[k];
+            if ((summed & (1 << r.nh)) == 0) {
+                sums[r.nh] = sum_nhood<width, height, depth, T>(buf_r, x, y, &nhs[r.nh]);
+                summed |= 1 << r.nh;
+            }
+            if (r.lower <= sums[r.nh] && sums[r.nh] <= r.upper) {
+                buf_w[i] = r.value;
+                return;
+            }
         }
 
-        buf_w[i] = buf_r[i];
+        buf_w[i * depth] = buf_r[i];
     }
 }
 
@@ -73,11 +64,28 @@ __global__ void ReefCA::draw_nhood(T* buf, int x, int y, nhood nh) {
     }
 }
 
+template<int width, int height, int depth, typename T>
+__global__ void ReefCA::draw_nhood(T* buf, int x, int y, nhood* nh) {
+    for (int i = 0; i < nh->size; i++) {
+        int nx = nh->p[i * 2];
+        int ny = nh->p[i * 2 + 1];
+        int pix = get_rel<width, height, depth>(x, y, nx, ny);
+        buf[pix] = T(-1);
+    }
+}
+
 nhood ReefCA::upload_nh(std::vector<int>& v) {
     int* p;
     cudaMalloc(&p, v.size() * sizeof(int));
     cudaMemcpy(p, &v[0], v.size() * sizeof(int), cudaMemcpyHostToDevice);
     return nhood{p, int(v.size()) / 2};
+}
+
+nhood* ReefCA::upload_nh_array(std::vector<nhood>& v) {
+    nhood* p;
+    cudaMalloc(&p, sizeof(nhood) * v.size());
+    cudaMemcpy(p, &v[0], sizeof(nhood) * v.size(), cudaMemcpyHostToDevice);
+    return p;
 }
 
 void ReefCA::generate_nh_fill_circle(int r_outer, int r_inner, std::vector<int>& v) {
@@ -90,4 +98,54 @@ void ReefCA::generate_nh_fill_circle(int r_outer, int r_inner, std::vector<int>&
             }
         }
     }
+}
+
+template<typename T>
+bool ReefCA::read_mnca_rule(nhood** nhs, int* num_nhs, rule<T>** rules, int* num_rules) {
+    std::vector<std::vector<int>> neighborhoods_vector = std::vector<std::vector<int>>();
+    std::vector<ReefCA::rule<unsigned char>> rules_vector = std::vector<ReefCA::rule<unsigned char>>();
+
+    // Read in from input
+    bool reading_params = false;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (line == "params") {
+            reading_params = true;
+            continue;
+        } else if (reading_params) {
+            std::stringstream ss(line);
+            int n, lower, upper, value;
+            ss >> n >> lower >> upper >> value;
+            ReefCA::rule<unsigned char> r = { 
+                n,
+                unsigned long int(lower * T(-1)), 
+                unsigned long int(upper * T(-1)), 
+                T(value)
+            };
+            rules_vector.push_back(r);
+        } else {
+            std::stringstream ss(line);
+            std::vector<int> nh = std::vector<int>();
+            int v;
+            while (ss >> v) {
+                nh.push_back(v);
+            }
+            neighborhoods_vector.push_back(nh);
+        }
+    }
+
+    // Upload neighborhoods
+    std::vector<nhood> nhoods = std::vector<nhood>();
+    for (int i = 0; i < neighborhoods_vector.size(); i++) {
+        nhoods.push_back(ReefCA::upload_nh(neighborhoods_vector[i]));
+    }
+    *nhs = ReefCA::upload_nh_array(nhoods);
+    *num_nhs = nhoods.size();
+
+    // Upload MNCA rules
+    cudaMalloc(rules, rules_vector.size() * sizeof(rule<unsigned char>));
+    cudaMemcpy(*rules, &rules_vector[0], rules_vector.size() * sizeof(rule<unsigned char>), cudaMemcpyHostToDevice);
+    *num_rules = rules_vector.size();
+
+    return true;
 }

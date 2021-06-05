@@ -33,10 +33,10 @@ __global__ void ReefCA::seed_symmetric(T * buf, char axis, T step) {
 		int x = i % width;
 		int y = i / width;
 		if (axis & MIRROR_X_AXIS == MIRROR_X_AXIS && x >= width / 2) {
-			x / 2 - (x - width / 2);
+			x = x / 2 - (x - width / 2);
 		}
 		if (axis & MIRROR_Y_AXIS == MIRROR_Y_AXIS && y >= height / 2) {
-			y / 2 - (y - height / 2);
+			y = y / 2 - (y - height / 2);
 		}
 		int q = y * width + x;
 		buf[i * depth] = random(i, step);
@@ -50,7 +50,7 @@ __global__ void ReefCA::seed_wave(T* buf, T step, int wave_m) {
 		int x = i % width;
 		int y = i / width;
 		float z = sin(float(x) / float(width) * wave_m) * sin(float(y) / float(width) * wave_m);
-		int chance = 60;
+		int chance = 40;
 		if (z > 0.7f) chance = 0;
 		else if (z > 0.67f) chance = 80;
 		else if (z > 0.6f) chance = 100;

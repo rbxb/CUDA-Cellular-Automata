@@ -10,21 +10,21 @@
 const int SIZE = WIDTH * HEIGHT * DEPTH;
 
 int main(void) {
-    unsigned char* buf_w;
+    ReefCA::nhood* nhs;
+    ReefCA::rule<unsigned char>* rules;
+    int num_nhs;
+    int num_rules;
+    ReefCA::read_mnca_rule(&nhs, &num_nhs, &rules, &num_rules);
 
     // Allocate buffers
+    unsigned char* buf_w;
     cudaMalloc(&buf_w, SIZE);
 
     // Create out buffer
     unsigned char* out_buffer = new unsigned char[SIZE];
 
-    // Create neighborhood
-    std::vector<int> v = std::vector<int>();
-    ReefCA::generate_nh_fill_circle(7, 3, v);
-    nhood nh = ReefCA::upload_nh(v);
-
     // Draw neighborhood
-    ReefCA::draw_nhood<WIDTH, HEIGHT, DEPTH> << < 1, 1 >> > (buf_w, 0, 0, nh);
+    ReefCA::draw_nhood<WIDTH, HEIGHT, DEPTH> << < 1, 1 >> > (buf_w, 20, 20, nhs);
 
     // Copy frame from device to host
     cudaMemcpy(out_buffer, buf_w, SIZE, cudaMemcpyDeviceToHost);
@@ -37,7 +37,6 @@ int main(void) {
     
     // Free buffers
     cudaFree(buf_w);
-    cudaFree(nh.p);
 
     return 0;
 }

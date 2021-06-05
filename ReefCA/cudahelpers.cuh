@@ -15,9 +15,9 @@ namespace ReefCA {
 	__host__ __device__ void copy(T* from, T* to);
 
 	template<int width, int height, int depth>
-	__host__ __device__ int get_rel(int x0, int y0, int x, int y);
+	__host__ __device__ inline int get_rel(int x0, int y0, int x, int y);
 
-	__host__ __device__ double dist(int x, int y);
+	__host__ __device__ inline double dist(int x, int y);
 };
 
 #include "cudahelpers.cu"

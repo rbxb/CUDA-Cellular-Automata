@@ -1,6 +1,8 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <string>
+#include <sstream>
 
 #include "reefca.h"
 
@@ -8,44 +10,29 @@
 #define SAVE_INTERVAL 10
 #define THREADS 256
 
-#define WIDTH 256
-#define HEIGHT 256
+#define WIDTH 2048
+#define HEIGHT 2048
 #define DEPTH 1
 
 const int SIZE = WIDTH * HEIGHT * DEPTH;
 
 int main(void) {
+    ReefCA::nhood* nhs;
+    ReefCA::rule<unsigned char>* rules;
+    int num_nhs;
+    int num_rules;
+    ReefCA::read_mnca_rule(&nhs, &num_nhs, &rules, &num_rules);
+
+    // Allocate framebuffers
     unsigned char* buf_r;
     unsigned char* buf_w;
-
-    // Create MNCA parameters
-    unsigned short int params[8] = { 7,12,19,21,10,25,53,133 };
-    unsigned short int* d_params;
-    cudaMalloc(&d_params, sizeof(params));
-    cudaMemcpy(d_params, &params, sizeof(params), cudaMemcpyHostToDevice);
-
-    // Create neighborhood 0
-    std::vector<int> v = std::vector<int>();
-    ReefCA::generate_nh_fill_circle(3, 2, v);
-    ReefCA::generate_nh_fill_circle(1, 0, v);
-    nhood nh0 = ReefCA::upload_nh(v);
-
-    // Create neighborhood 1
-    v.clear();
-    ReefCA::generate_nh_fill_circle(14, 13, v);
-    ReefCA::generate_nh_fill_circle(11, 10, v);
-    ReefCA::generate_nh_fill_circle(8, 7, v);
-    ReefCA::generate_nh_fill_circle(5, 4, v);
-    nhood nh1 = ReefCA::upload_nh(v);
-
-    // Allocate buffers
     cudaMalloc(&buf_r, SIZE);
     cudaMalloc(&buf_w, SIZE);
 
-    // Create out buffer
+    // Allocate out buffer
     unsigned char* out_buffer = new unsigned char[SIZE];
 
-    // Run seed kernel
+    // Run seed noise kernel
     ReefCA::seed_wave<WIDTH, HEIGHT, DEPTH> << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r);
 
     // Loop MNCA generations
@@ -60,7 +47,9 @@ int main(void) {
         }
 
         // Start next transition
-        ReefCA::mnca_2n_8t<WIDTH, HEIGHT, DEPTH> << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r, buf_w, nh0, nh1, d_params);
+        ReefCA::mnca_transition<WIDTH, HEIGHT, DEPTH> 
+            << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > 
+            (buf_r, buf_w, nhs, rules, num_rules);
 
         // Update cout
         if (i % 10 == 0) {
@@ -87,8 +76,6 @@ int main(void) {
     // Free buffers
     cudaFree(buf_r);
     cudaFree(buf_w);
-    cudaFree(nh0.p);
-    cudaFree(nh1.p);
 
     std::cout << "Done!" << std::endl;
 
