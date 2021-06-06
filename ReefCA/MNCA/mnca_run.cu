@@ -59,7 +59,7 @@ int main(void) {
 
         if (i % SAVE_INTERVAL == 0) {
             // Save as PPM
-            ReefCA::save_pam("out" + ReefCA::pad_image_index(i / SAVE_INTERVAL) + ".pam", out_buffer, WIDTH, HEIGHT, DEPTH);
+            ReefCA::save_pam("./frames/out" + ReefCA::pad_image_index(i / SAVE_INTERVAL) + ".pam", out_buffer, WIDTH, HEIGHT, DEPTH);
         }
         
         // Swap buffers
@@ -72,7 +72,7 @@ int main(void) {
     // Save the final frame
     cudaMemcpy(out_buffer, buf_r, SIZE, cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
-    ReefCA::save_pam("out" + ReefCA::pad_image_index(FRAMES) + ".pam", out_buffer, WIDTH, HEIGHT, DEPTH);
+    ReefCA::save_pam("./frames/out" + ReefCA::pad_image_index(FRAMES) + ".pam", out_buffer, WIDTH, HEIGHT, DEPTH);
 
     // Free GPU memory
     cudaFree(buf_r);

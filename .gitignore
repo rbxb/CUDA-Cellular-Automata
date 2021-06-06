@@ -1,5 +1,5 @@
-/resources
+/resources/frames
+/resources/videos
 /out
 /build
 .vs
-!/resources/rules
