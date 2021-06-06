@@ -33,7 +33,7 @@ __global__ void ReefCA::mnca_transition(T* buf_r, T* buf_w, nhood* nhs, rule<T>*
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < width * height) {
         int x = i % width;
-        int y = i / height;
+        int y = i / width;
 
         unsigned long int sums [max_nhs];
         unsigned char summed = 0;

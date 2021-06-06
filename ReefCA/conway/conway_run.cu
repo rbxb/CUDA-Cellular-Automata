@@ -4,7 +4,7 @@
 #include "reefca.h"
 
 #define THREADS 256
-#define FRAMES 100
+#define FRAMES 200
 
 #define WIDTH 256
 #define HEIGHT 256

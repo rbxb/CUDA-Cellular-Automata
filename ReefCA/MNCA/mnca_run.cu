@@ -6,12 +6,12 @@
 
 #include "reefca.h"
 
-#define FRAMES 4000
-#define SAVE_INTERVAL 10
+#define FRAMES 2000
+#define SAVE_INTERVAL 1
 #define THREADS 256
 
-#define WIDTH 2048
-#define HEIGHT 2048
+#define WIDTH 1920
+#define HEIGHT 1080
 #define DEPTH 1
 
 const int SIZE = WIDTH * HEIGHT * DEPTH;
@@ -33,7 +33,7 @@ int main(void) {
     unsigned char* out_buffer = new unsigned char[SIZE];
 
     // Run seed noise kernel
-    ReefCA::seed_wave<WIDTH, HEIGHT, DEPTH> << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r);
+    ReefCA::seed_wave<WIDTH, HEIGHT, DEPTH, unsigned char> << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r, -1, 16);
 
     // Loop MNCA generations
     for (int i = 0; i < FRAMES; i++) {

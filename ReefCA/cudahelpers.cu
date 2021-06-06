@@ -18,9 +18,10 @@ __host__ __device__ void ReefCA::copy(T* from, T* to) {
 
 template<int width, int height, int depth>
 __host__ __device__ inline int ReefCA::get_rel(int x0, int y0, int x, int y) {
-	x = (x0 + x + width) % width;
-	y = (y0 + y + height) % height;
-	return (y * width + x) * depth;
+	x += x0;
+	y += y0;
+	const int size = width * height;
+	return (y * width + x + size) % size;
 }
 
 __host__ __device__ inline double ReefCA::dist(int x, int y) {

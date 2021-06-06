@@ -15,7 +15,7 @@ __global__ void ReefCA::conway_transition(T* buf_r, T* buf_w) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < width * height) {
         int x = i % width;
-        int y = i / height;
+        int y = i / width;
         unsigned char count = 0;
         count += buf_r[get_rel<width, height, depth>(x, y, 1, 1)] & 1;
         count += buf_r[get_rel<width, height, depth>(x, y, 1, 0)] & 1;
