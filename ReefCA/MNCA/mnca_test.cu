@@ -10,13 +10,14 @@
 const int SIZE = WIDTH * HEIGHT * DEPTH;
 
 int main(void) {
+    // Read MNCA rule to get neighborhood
     ReefCA::nhood* nhs;
     ReefCA::rule<unsigned char>* rules;
     int num_nhs;
     int num_rules;
     ReefCA::read_mnca_rule(&nhs, &num_nhs, &rules, &num_rules);
 
-    // Allocate buffers
+    // Allocate buffer
     unsigned char* buf_w;
     cudaMalloc(&buf_w, SIZE);
 
@@ -35,8 +36,11 @@ int main(void) {
     // Save as PPM
     ReefCA::save_pam("mnca_test.pam", out_buffer, WIDTH, HEIGHT, DEPTH);
     
-    // Free buffers
+    // Free GPU memory
     cudaFree(buf_w);
+    ReefCA::free_nhs_values(nhs, num_nhs);
+    cudaFree(nhs);
+    cudaFree(rules);
 
     return 0;
 }

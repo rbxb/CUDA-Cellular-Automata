@@ -21,7 +21,7 @@ long long render(render_func rf, unsigned char* buf_r, unsigned char* buf_w, int
     // Start wall clock
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-    // Run game of life kernel
+    // Run kernel
     for (int i = 0; i < frames; i++) {
         rf(buf_r, buf_w);
         unsigned char* temp = buf_r;
@@ -62,9 +62,10 @@ int main(void) {
     cudaMalloc(&buffer_a, SIZE);
     cudaMalloc(&buffer_b, SIZE);
 
+    // Run benchmark
     benchmark(rf_conway_transition, "benchmark", buffer_a, buffer_b);
 
-    // Free buffers
+    // Free GPU memory
     cudaFree(buffer_a);
     cudaFree(buffer_b);
 

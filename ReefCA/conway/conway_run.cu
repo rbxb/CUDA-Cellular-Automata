@@ -16,7 +16,7 @@ int main(void) {
     unsigned char* buf_r;
     unsigned char* buf_w;
 
-    // Allocate buffers
+    // Allocate framebuffers
     cudaMalloc(&buf_r, SIZE);
     cudaMalloc(&buf_w, SIZE);
 
@@ -26,7 +26,7 @@ int main(void) {
     // Run seed kernel
     ReefCA::seed<WIDTH, HEIGHT, DEPTH> << < (WIDTH * HEIGHT + THREADS - 1) / THREADS, THREADS >> > (buf_r);
 
-    // Loop conways game of life
+    // Loop Conways Game of Life
     for (int i = 0; i < FRAMES; i++) {
         // Copy frame from device to host
         cudaMemcpy(out_buffer, buf_r, SIZE, cudaMemcpyDeviceToHost);
@@ -57,7 +57,7 @@ int main(void) {
     cudaDeviceSynchronize();
     ReefCA::save_pam("out" + ReefCA::pad_image_index(FRAMES) + ".pam", out_buffer, WIDTH, HEIGHT, DEPTH);
 
-    // Free buffers
+    // Free GPU memory
     cudaFree(buf_r);
     cudaFree(buf_w);
 

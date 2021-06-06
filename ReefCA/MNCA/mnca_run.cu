@@ -6,17 +6,18 @@
 
 #include "reefca.h"
 
-#define FRAMES 2000
+#define FRAMES 200
 #define SAVE_INTERVAL 1
 #define THREADS 256
 
-#define WIDTH 1920
-#define HEIGHT 1080
+#define WIDTH 512
+#define HEIGHT 512
 #define DEPTH 1
 
 const int SIZE = WIDTH * HEIGHT * DEPTH;
 
 int main(void) {
+    // Read MNCA rule to get neighborhood
     ReefCA::nhood* nhs;
     ReefCA::rule<unsigned char>* rules;
     int num_nhs;
@@ -73,9 +74,12 @@ int main(void) {
     cudaDeviceSynchronize();
     ReefCA::save_pam("out" + ReefCA::pad_image_index(FRAMES) + ".pam", out_buffer, WIDTH, HEIGHT, DEPTH);
 
-    // Free buffers
+    // Free GPU memory
     cudaFree(buf_r);
     cudaFree(buf_w);
+    ReefCA::free_nhs_values(nhs, num_nhs);
+    cudaFree(nhs);
+    cudaFree(rules);
 
     std::cout << "Done!" << std::endl;
 

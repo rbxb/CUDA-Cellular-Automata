@@ -17,12 +17,15 @@ namespace ReefCA {
 	template<typename T = unsigned char>
 	__device__ T random(int i, T step = -1);
 
+	// Seeds the texture with pseudorandom noise
 	template<int width, int height, int depth, typename T = unsigned char>
 	__global__ void seed(T* buf, T step = -1);
 
+	// Seeds symmetrically along the given axis
 	template<int width, int height, int depth, typename T = unsigned char>
 	__global__ void seed_symmetric(T* buf, char axis = MIRROR_Y_AXIS, T step = -1);
 
+	// Seeds with holes and rings using sin waves
 	template<int width, int height, int depth, typename T = unsigned char>
 	__global__ void seed_wave(T* buf, T step = -1, int wave_m = 8);
 };

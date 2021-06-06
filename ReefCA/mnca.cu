@@ -40,10 +40,15 @@ __global__ void ReefCA::mnca_transition(T* buf_r, T* buf_w, nhood* nhs, rule<T>*
 
         for (int k = 0; k < n; k++) {
             rule<T> r = rules[k];
+            
+            // check if the neighborhood has been summed already
+            // if not, sum it and cache the result
             if ((summed & (1 << r.nh)) == 0) {
                 sums[r.nh] = sum_nhood<width, height, depth, T>(buf_r, x, y, &nhs[r.nh]);
                 summed |= 1 << r.nh;
             }
+
+            // apply rule
             if (r.lower <= sums[r.nh] && sums[r.nh] <= r.upper) {
                 buf_w[i] = r.value;
                 return;
@@ -51,16 +56,6 @@ __global__ void ReefCA::mnca_transition(T* buf_r, T* buf_w, nhood* nhs, rule<T>*
         }
 
         buf_w[i * depth] = buf_r[i];
-    }
-}
-
-template<int width, int height, int depth, typename T>
-__global__ void ReefCA::draw_nhood(T* buf, int x, int y, nhood nh) {
-    for (int i = 0; i < nh.size; i++) {
-        int nx = nh.p[i * 2];
-        int ny = nh.p[i * 2 + 1];
-        int pix = get_rel<width, height, depth>(x, y, nx, ny);
-        buf[pix] = T(-1);
     }
 }
 
@@ -79,13 +74,6 @@ nhood ReefCA::upload_nh(std::vector<int>& v) {
     cudaMalloc(&p, v.size() * sizeof(int));
     cudaMemcpy(p, &v[0], v.size() * sizeof(int), cudaMemcpyHostToDevice);
     return nhood{p, int(v.size()) / 2};
-}
-
-nhood* ReefCA::upload_nh_array(std::vector<nhood>& v) {
-    nhood* p;
-    cudaMalloc(&p, sizeof(nhood) * v.size());
-    cudaMemcpy(p, &v[0], sizeof(nhood) * v.size(), cudaMemcpyHostToDevice);
-    return p;
 }
 
 void ReefCA::generate_nh_fill_circle(int r_outer, int r_inner, std::vector<int>& v) {
@@ -139,7 +127,8 @@ bool ReefCA::read_mnca_rule(nhood** nhs, int* num_nhs, rule<T>** rules, int* num
     for (int i = 0; i < neighborhoods_vector.size(); i++) {
         nhoods.push_back(ReefCA::upload_nh(neighborhoods_vector[i]));
     }
-    *nhs = ReefCA::upload_nh_array(nhoods);
+    cudaMalloc(nhs, sizeof(nhood) * nhoods.size());
+    cudaMemcpy(*nhs, &nhoods[0], sizeof(nhood) * nhoods.size(), cudaMemcpyHostToDevice);
     *num_nhs = nhoods.size();
 
     // Upload MNCA rules
@@ -148,4 +137,13 @@ bool ReefCA::read_mnca_rule(nhood** nhs, int* num_nhs, rule<T>** rules, int* num
     *num_rules = rules_vector.size();
 
     return true;
+}
+
+void ReefCA::free_nhs_values(nhood* nhs, int n) {
+    nhood* host_nhs = new nhood [n];
+    cudaMemcpy(host_nhs, nhs, sizeof(nhood) * n, cudaMemcpyDeviceToHost);
+    for (int i = 0; i < n; i++) {
+        cudaFree(host_nhs[i].p);
+    }
+    delete host_nhs;
 }

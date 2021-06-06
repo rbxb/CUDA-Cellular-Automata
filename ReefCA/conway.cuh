@@ -11,6 +11,7 @@
 #include "device_launch_parameters.h"
 
 namespace ReefCA {
+	// Conway transition function
 	template<int width, int height, int depth, typename T = unsigned char>
 	__global__ void conway_transition(T* buf_r, T* buf_w);
 };
