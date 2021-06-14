@@ -11,8 +11,8 @@ MNCA was developed by Slackermanz. For more information about MNCA or a brief ex
 
 Example outputs:
 
-![conway example](./examples/conway.gif)
+![conway example](./examples/conway.gif)  
 _Conway's Game of Life_
 
-![mnca example](./examples/200.gif)
+![mnca example](./examples/200.gif)  
 _A discrete MNCA discovered by Slackermanz_
